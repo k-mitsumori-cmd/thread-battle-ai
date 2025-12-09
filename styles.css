@@ -1,0 +1,200 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'MS Gothic', 'MS PGothic', 'Courier New', monospace;
+    background-color: #000000;
+    color: #00ff00;
+    line-height: 1.6;
+    padding: 10px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: #0a0a0a;
+    padding: 15px;
+}
+
+.header {
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.header-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.back-link, .pr-link {
+    color: #0066ff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link:hover, .pr-link:hover {
+    text-decoration: underline;
+}
+
+.thread-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ff00;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #111;
+    border-left: 3px solid #00ff00;
+}
+
+.thread-content {
+    margin-bottom: 30px;
+    min-height: 200px;
+}
+
+.post {
+    margin-bottom: 15px;
+    padding: 8px;
+    border-bottom: 1px dotted #333;
+    font-size: 14px;
+}
+
+.post-header {
+    color: #00ccff;
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.post-number {
+    color: #ffff00;
+    font-weight: bold;
+}
+
+.post-name {
+    color: #00ff00;
+}
+
+.post-date {
+    color: #888;
+    font-size: 12px;
+}
+
+.post-id {
+    color: #ff00ff;
+    font-size: 11px;
+}
+
+.post-content {
+    color: #00ff00;
+    margin-top: 5px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.post-content .quote {
+    color: #00ccff;
+}
+
+.post-content .quote::before {
+    content: ">>";
+    color: #ffff00;
+}
+
+.user-post {
+    background-color: #1a1a1a;
+    border-left: 3px solid #ffff00;
+    padding-left: 10px;
+}
+
+.ai-post {
+    background-color: #0f0f0f;
+}
+
+.input-area {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #333;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#userInput {
+    flex: 1;
+    background-color: #000;
+    color: #00ff00;
+    border: 1px solid #333;
+    padding: 10px;
+    font-family: 'MS Gothic', 'MS PGothic', 'Courier New', monospace;
+    font-size: 14px;
+    resize: vertical;
+}
+
+#userInput:focus {
+    outline: 1px solid #00ff00;
+    border-color: #00ff00;
+}
+
+#submitBtn {
+    background-color: #0066ff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'MS Gothic', 'MS PGothic', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+#submitBtn:hover {
+    background-color: #0055dd;
+}
+
+#submitBtn:active {
+    background-color: #0044bb;
+}
+
+.info-text {
+    color: #888;
+    font-size: 12px;
+    text-align: center;
+}
+
+.loading {
+    color: #888;
+    font-style: italic;
+}
+
+/* レス番号のリンク風スタイル */
+.post-number {
+    cursor: pointer;
+}
+
+.post-number:hover {
+    text-decoration: underline;
+}
+
+/* スクロールバーのスタイル */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+

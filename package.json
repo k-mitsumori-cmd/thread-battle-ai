@@ -1,0 +1,20 @@
+{
+  "name": "thread-battle-ai",
+  "version": "1.0.0",
+  "description": "2chスレッド風・論破レスバAIゲーム",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": [
+    "2ch",
+    "bbs",
+    "ai",
+    "game",
+    "thread"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
