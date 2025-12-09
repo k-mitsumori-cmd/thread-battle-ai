@@ -613,11 +613,14 @@ class ThreadBattleAI {
         // 入力欄をクリア
         userInput.value = '';
         
-        // ローディング表示
+        // ローディング表示（アニメーション付き）
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'post loading';
-        loadingDiv.textContent = 'AIがレスを生成中...';
+        loadingDiv.id = 'responseLoading';
         document.getElementById('threadContent').appendChild(loadingDiv);
+        
+        // アニメーション付きメッセージ表示
+        this.showResponseLoading(loadingDiv);
         
         try {
             // AI住民のレスを生成
