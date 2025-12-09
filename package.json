@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "2chスレッド風・論破レスバAIゲーム",
   "main": "index.html",
+  "type": "module",
   "scripts": {
     "start": "npx serve .",
     "dev": "npx serve ."
@@ -15,6 +16,12 @@
     "thread"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^4.20.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
 }
 

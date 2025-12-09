@@ -140,7 +140,7 @@ class ThreadBattleAI {
         return `${year}/${month}/${day}(${weekday}) ${hours}:${minutes}:${seconds}.${milliseconds}`;
     }
 
-    generateResponse(userPost) {
+    async generateResponse(userPost) {
         const numResponses = Math.floor(Math.random() * 4) + 3; // 3〜6レス
         const responses = [];
         const usedResidents = new Set();
@@ -154,11 +154,61 @@ class ThreadBattleAI {
             
             const resident = this.residents[residentIndex];
             const style = this.residentStyles[residentIndex];
-            const response = this.createResponse(userPost, resident, style, i, numResponses);
-            responses.push(response);
+            
+            // APIを呼び出してレスを生成
+            try {
+                const response = await this.generateResponseWithAI(userPost, resident, style, i, numResponses);
+                responses.push(response);
+            } catch (error) {
+                console.error('AIレス生成エラー:', error);
+                // エラー時はフォールバック
+                const fallbackResponse = this.createResponse(userPost, resident, style, i, numResponses);
+                responses.push(fallbackResponse);
+            }
         }
         
         return responses;
+    }
+    
+    async generateResponseWithAI(userPost, resident, style, index, total) {
+        // API URLを決定（Vercel環境かローカルか）
+        const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000/api/generate'
+            : '/api/generate';
+        
+        // 前のレスを取得（住民同士の揉め演出用）
+        const previousPosts = this.posts.slice(-3).map(p => ({
+            number: p.number,
+            resident: p.resident,
+            content: p.content
+        }));
+        
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userPost: userPost,
+                postNumber: this.postNumber,
+                residentName: resident,
+                residentStyle: style,
+                responseIndex: index,
+                totalResponses: total,
+                previousPosts: previousPosts
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        return {
+            resident: resident,
+            content: data.content
+        };
     }
 
     createResponse(userPost, resident, style, index, total) {
@@ -300,6 +350,28 @@ class ThreadBattleAI {
             content: responseText
         };
     }
+    
+    generateFallbackResponses(userPost) {
+        // APIが使えない場合のフォールバック
+        const numResponses = Math.floor(Math.random() * 4) + 3;
+        const responses = [];
+        const usedResidents = new Set();
+        
+        for (let i = 0; i < numResponses; i++) {
+            let residentIndex;
+            do {
+                residentIndex = Math.floor(Math.random() * this.residents.length);
+            } while (usedResidents.size < this.residents.length && usedResidents.has(residentIndex));
+            usedResidents.add(residentIndex);
+            
+            const resident = this.residents[residentIndex];
+            const style = this.residentStyles[residentIndex];
+            const response = this.createResponse(userPost, resident, style, i, numResponses);
+            responses.push(response);
+        }
+        
+        return responses;
+    }
 
     addPost(resident, content, isUser = false) {
         this.postNumber++;
@@ -408,22 +480,30 @@ class ThreadBattleAI {
         // ローディング表示
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'post loading';
-        loadingDiv.textContent = '...';
+        loadingDiv.textContent = 'AIがレスを生成中...';
         document.getElementById('threadContent').appendChild(loadingDiv);
         
-        // 少し遅延を入れて自然な感じに
-        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-        
-        // ローディングを削除
-        loadingDiv.remove();
-        
-        // AI住民のレスを生成
-        const responses = this.generateResponse(userPost);
-        
-        // レスを順番に追加（少し間隔を空けて）
-        for (let i = 0; i < responses.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
-            this.addPost(responses[i].resident, responses[i].content);
+        try {
+            // AI住民のレスを生成
+            const responses = await this.generateResponse(userPost);
+            
+            // ローディングを削除
+            loadingDiv.remove();
+            
+            // レスを順番に追加（少し間隔を空けて）
+            for (let i = 0; i < responses.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+                this.addPost(responses[i].resident, responses[i].content);
+            }
+        } catch (error) {
+            console.error('レス生成エラー:', error);
+            loadingDiv.remove();
+            // エラー時はフォールバック
+            const fallbackResponses = this.generateFallbackResponses(userPost);
+            for (let i = 0; i < fallbackResponses.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
+                this.addPost(fallbackResponses[i].resident, fallbackResponses[i].content);
+            }
         }
         
         // 1000なら演出
