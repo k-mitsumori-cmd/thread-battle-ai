@@ -312,11 +312,12 @@ class ThreadBattleAI {
             ? 'http://localhost:3000/api/generate'
             : '/api/generate';
         
-        // 前のレスを取得（住民同士の揉め演出用）
-        const previousPosts = this.posts.slice(-3).map(p => ({
+        // 前のレスを取得（スレッド全体の一貫性のため、より多くの過去のレスを参照）
+        const previousPosts = this.posts.slice(-10).map(p => ({
             number: p.number,
             resident: p.resident,
-            content: p.content
+            content: p.content,
+            isUser: p.isUser
         }));
         
         const response = await fetch(apiUrl, {

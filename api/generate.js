@@ -96,6 +96,16 @@ export default async function handler(req, res) {
 
 // プロンプトを作成
 function createPrompt(userPost, postNumber, residentName, residentStyle, responseIndex, totalResponses, previousPosts) {
+    // レス長さをランダムに決定（たまに長文）
+    const shouldBeLong = Math.random() < 0.2; // 20%の確率で長文
+    const lengthInstruction = shouldBeLong 
+        ? '100文字以上の長文で、詳しく論破してください。' 
+        : '50文字程度の短いレスで、短く鋭く論破してください。';
+
+    // 過去のレスを整理（ユーザーの投稿とAI住民のレスを分ける）
+    const userPosts = previousPosts.filter(p => p.isUser).slice(-3);
+    const aiPosts = previousPosts.filter(p => !p.isUser).slice(-5);
+    
     let prompt = `【ユーザーの投稿】
 ${userPost}
 
@@ -108,32 +118,49 @@ ${postNumber}番目のレスです。
 【レス位置】
 ${responseIndex + 1} / ${totalResponses} のレスです。`;
 
-    // レス長さをランダムに決定（たまに長文）
-    const shouldBeLong = Math.random() < 0.2; // 20%の確率で長文
-    const lengthInstruction = shouldBeLong 
-        ? '100文字以上の長文で、詳しく論破してください。' 
-        : '50文字程度の短いレスで、短く鋭く論破してください。';
+    // 過去のレスを参照（スレッド全体の一貫性のため）
+    if (previousPosts && previousPosts.length > 0) {
+        prompt += `\n\n【過去のスレッドの流れ】
+以下は過去のレスです。これらの内容を参考にして、一貫性のある反論をしてください。
+`;
+        
+        // ユーザーの過去の投稿
+        if (userPosts.length > 0) {
+            prompt += `\n【ユーザーの過去の投稿】\n`;
+            userPosts.forEach(p => {
+                prompt += `>>${p.number} ${p.resident}: ${p.content}\n`;
+            });
+        }
+        
+        // AI住民の過去のレス
+        if (aiPosts.length > 0) {
+            prompt += `\n【過去のAI住民のレス】\n`;
+            aiPosts.forEach(p => {
+                prompt += `>>${p.number} ${p.resident}: ${p.content}\n`;
+            });
+            prompt += `\n【重要】過去のレスで指摘した論点や矛盾点を踏まえて、一貫性のある反論をしてください。
+過去のレスと矛盾しないように、論理的な流れを保ってください。`;
+        }
+    }
 
     if (responseIndex === 0) {
         prompt += `\n\n【指示】
 最初のレスなので、ユーザーの投稿に直接ツッコミ・論破・煽りをしてください。
 ${lengthInstruction}
-2chらしい雑多な感じで、単純なツッコミでも論理的な論破でも、様々なスタイルでOKです。`;
+2chらしい雑多な感じで、単純なツッコミでも論理的な論破でも、様々なスタイルでOKです。
+過去のレスがある場合は、それらの論点を踏まえて一貫性のある反論をしてください。`;
     } else if (responseIndex < totalResponses - 1) {
         prompt += `\n\n【指示】
 中間のレスです。他の住民のレスを見て、住民同士で揉める演出や、別視点での論破をしてください。
 ${lengthInstruction}
-2chらしい雑多な感じで、様々なスタイルを混ぜてください。`;
-        
-        if (previousPosts && previousPosts.length > 0) {
-            prompt += `\n\n【前のレス】
-${previousPosts.slice(-2).map((p, i) => `>>${p.number} ${p.resident}: ${p.content}`).join('\n')}`;
-        }
+2chらしい雑多な感じで、様々なスタイルを混ぜてください。
+過去のレスで指摘した論点を踏まえて、一貫性のある反論をしてください。`;
     } else {
         prompt += `\n\n【指示】
 最後のレスなので、まとめレスとして「結論：>>${postNumber} が間違ってる」のような形で締めてください。
 ${lengthInstruction}
-2chらしい雑多な感じで締めてください。`;
+2chらしい雑多な感じで締めてください。
+過去のレス全体の流れを踏まえて、一貫性のあるまとめをしてください。`;
     }
 
     // スタイルに応じた指示
