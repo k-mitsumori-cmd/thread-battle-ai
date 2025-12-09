@@ -39,6 +39,95 @@ class ThreadBattleAI {
         
         // 初期メッセージ表示
         this.showInitialMessage();
+        
+        // テーマを自動生成
+        this.generateTheme();
+    }
+    
+    async generateTheme() {
+        const themeArea = document.getElementById('themeSuggestionArea');
+        
+        // ローディング表示
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'theme-loading';
+        loadingDiv.textContent = 'AIがテーマを考えています...';
+        themeArea.appendChild(loadingDiv);
+        
+        try {
+            // API URLを決定
+            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:3000/api/generate-theme'
+                : '/api/generate-theme';
+            
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const theme = data.theme;
+            
+            // ローディングを削除
+            loadingDiv.remove();
+            
+            // テーマ表示
+            this.showTheme(theme);
+            
+        } catch (error) {
+            console.error('テーマ生成エラー:', error);
+            // エラー時はフォールバックテーマ
+            loadingDiv.remove();
+            const fallbackThemes = [
+                'テレワークってもう終わりなの？',
+                'AIに仕事奪われるって本当？',
+                '最近の若者はマナーが悪い？',
+                'リモートワークって本当に効率的？',
+                'SNSは時間の無駄？'
+            ];
+            const theme = fallbackThemes[Math.floor(Math.random() * fallbackThemes.length)];
+            this.showTheme(theme);
+        }
+    }
+    
+    showTheme(theme) {
+        const themeArea = document.getElementById('themeSuggestionArea');
+        themeArea.innerHTML = '';
+        
+        const themeDiv = document.createElement('div');
+        themeDiv.className = 'theme-suggestion';
+        
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'theme-suggestion-title';
+        titleDiv.textContent = '💡 AIが選んだテーマ';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'theme-suggestion-content';
+        contentDiv.textContent = theme;
+        
+        const hintDiv = document.createElement('div');
+        hintDiv.className = 'theme-suggestion-hint';
+        hintDiv.textContent = '※ クリックすると入力欄に自動入力されます';
+        
+        themeDiv.appendChild(titleDiv);
+        themeDiv.appendChild(contentDiv);
+        themeDiv.appendChild(hintDiv);
+        
+        // クリックで入力欄に自動入力
+        themeDiv.addEventListener('click', () => {
+            const userInput = document.getElementById('userInput');
+            userInput.value = theme;
+            userInput.focus();
+            // テーマエリアを非表示にする
+            themeArea.style.display = 'none';
+        });
+        
+        themeArea.appendChild(themeDiv);
     }
     
     showInitialMessage() {
