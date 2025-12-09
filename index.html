@@ -42,7 +42,16 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="./app.js"></script>
+    <script>
+        // デバッグ用：JavaScriptが読み込まれたか確認
+        console.log('Thread Battle AI loaded');
+        
+        // エラーハンドリング
+        window.addEventListener('error', function(e) {
+            console.error('Error:', e.message, e.filename, e.lineno);
+        });
+    </script>
 </body>
 </html>
 
