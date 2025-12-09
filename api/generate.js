@@ -68,7 +68,7 @@ export default async function handler(req, res) {
                     content: prompt
                 }
             ],
-            temperature: 0.9, // 創造性を高める（ウィットに富んだレス生成のため）
+            temperature: 0.95, // 創造性を高める（ウィットに富んだレス生成のため）
             max_tokens: 150
         });
 
