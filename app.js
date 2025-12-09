@@ -47,11 +47,14 @@ class ThreadBattleAI {
     async generateTheme() {
         const themeArea = document.getElementById('themeSuggestionArea');
         
-        // ローディング表示
+        // ローディング表示（アニメーション付き）
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'theme-loading';
-        loadingDiv.textContent = 'AIがテーマを考えています...';
+        loadingDiv.id = 'themeLoading';
         themeArea.appendChild(loadingDiv);
+        
+        // アニメーション付きメッセージ表示
+        this.showAnimatedLoading(loadingDiv);
         
         try {
             // API URLを決定
@@ -95,16 +98,53 @@ class ThreadBattleAI {
         }
     }
     
+    showAnimatedLoading(loadingDiv) {
+        const messages = [
+            '相手がスレッドを書き込んでいます...',
+            '2ch住民が考えています...',
+            '論破準備中...',
+            'レスを構築中...',
+            'もうすぐ書き込みます...'
+        ];
+        
+        let messageIndex = 0;
+        let dotCount = 0;
+        
+        const updateMessage = () => {
+            const message = messages[messageIndex];
+            const dots = '.'.repeat((dotCount % 4));
+            loadingDiv.innerHTML = `<span class="loading-text">${message}${dots}</span><span class="loading-dots"></span>`;
+            dotCount++;
+            
+            if (dotCount % 20 === 0) {
+                messageIndex = (messageIndex + 1) % messages.length;
+            }
+        };
+        
+        // 初回表示
+        updateMessage();
+        
+        // アニメーション開始
+        this.loadingInterval = setInterval(updateMessage, 300);
+    }
+    
     showTheme(theme) {
+        // アニメーションを停止
+        if (this.loadingInterval) {
+            clearInterval(this.loadingInterval);
+        }
+        
         const themeArea = document.getElementById('themeSuggestionArea');
         themeArea.innerHTML = '';
         
         const themeDiv = document.createElement('div');
         themeDiv.className = 'theme-suggestion';
+        themeDiv.style.opacity = '0';
+        themeDiv.style.transform = 'translateY(-10px)';
         
         const titleDiv = document.createElement('div');
         titleDiv.className = 'theme-suggestion-title';
-        titleDiv.textContent = '💡 AIが選んだテーマ';
+        titleDiv.textContent = '💡 書き込みが来ました！';
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'theme-suggestion-content';
@@ -128,6 +168,13 @@ class ThreadBattleAI {
         });
         
         themeArea.appendChild(themeDiv);
+        
+        // フェードインアニメーション
+        setTimeout(() => {
+            themeDiv.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            themeDiv.style.opacity = '1';
+            themeDiv.style.transform = 'translateY(0)';
+        }, 50);
     }
     
     showInitialMessage() {
@@ -577,6 +624,9 @@ class ThreadBattleAI {
             const responses = await this.generateResponse(userPost);
             
             // ローディングを削除
+            if (this.responseLoadingInterval) {
+                clearInterval(this.responseLoadingInterval);
+            }
             loadingDiv.remove();
             
             // レスを順番に追加（少し間隔を空けて）
@@ -586,6 +636,9 @@ class ThreadBattleAI {
             }
         } catch (error) {
             console.error('レス生成エラー:', error);
+            if (this.responseLoadingInterval) {
+                clearInterval(this.responseLoadingInterval);
+            }
             loadingDiv.remove();
             // エラー時はフォールバック
             const fallbackResponses = this.generateFallbackResponses(userPost);
@@ -594,6 +647,38 @@ class ThreadBattleAI {
                 this.addPost(fallbackResponses[i].resident, fallbackResponses[i].content);
             }
         }
+    }
+    
+    showResponseLoading(loadingDiv) {
+        const messages = [
+            '相手がレスを書き込んでいます...',
+            '2ch住民が考えています...',
+            '論破準備中...',
+            'レスを構築中...',
+            'もうすぐ書き込みます...',
+            '反論を考えています...',
+            'ツッコミポイントを探しています...'
+        ];
+        
+        let messageIndex = 0;
+        let dotCount = 0;
+        
+        const updateMessage = () => {
+            const message = messages[messageIndex];
+            const dots = '.'.repeat((dotCount % 4));
+            loadingDiv.innerHTML = `<span class="loading-text">${message}${dots}</span><span class="loading-dots"></span>`;
+            dotCount++;
+            
+            if (dotCount % 15 === 0) {
+                messageIndex = (messageIndex + 1) % messages.length;
+            }
+        };
+        
+        // 初回表示
+        updateMessage();
+        
+        // アニメーション開始
+        this.responseLoadingInterval = setInterval(updateMessage, 400);
         
         // 1000なら演出
         if (this.postNumber === 1000) {
