@@ -3,6 +3,7 @@
 class ThreadBattleAI {
     constructor() {
         this.postNumber = 0;
+        this.posts = []; // 投稿を保存
         this.residents = [
             '風吹けば名無し',
             '名無しのゴッキー',
@@ -35,6 +36,72 @@ class ThreadBattleAI {
 
         // 初期スレタイ生成
         this.generateThreadTitle();
+        
+        // 初期メッセージ表示
+        this.showInitialMessage();
+    }
+    
+    showInitialMessage() {
+        const threadContent = document.getElementById('threadContent');
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-thread';
+        emptyDiv.id = 'emptyThread';
+        emptyDiv.textContent = 'スレッドがまだ空です。最初の書き込みをどうぞ。';
+        threadContent.appendChild(emptyDiv);
+    }
+    
+    updatePostCount() {
+        const postCountEl = document.getElementById('postCount');
+        if (postCountEl) {
+            postCountEl.textContent = this.postNumber;
+        }
+    }
+    
+    scrollToPost(postNumber) {
+        const postElement = document.querySelector(`[data-post-number="${postNumber}"]`);
+        if (postElement) {
+            postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // ハイライト効果
+            postElement.style.backgroundColor = '#1a3a1a';
+            setTimeout(() => {
+                postElement.style.backgroundColor = '';
+            }, 1000);
+        }
+    }
+    
+    parseQuotes(text) {
+        // >>1 のような引用をリンクに変換
+        const quoteRegex = />>(\d+)/g;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+        
+        while ((match = quoteRegex.exec(text)) !== null) {
+            // 引用の前のテキスト
+            if (match.index > lastIndex) {
+                parts.push({
+                    type: 'text',
+                    content: text.substring(lastIndex, match.index)
+                });
+            }
+            // 引用リンク
+            parts.push({
+                type: 'quote',
+                postNumber: parseInt(match[1]),
+                content: match[0]
+            });
+            lastIndex = match.index + match[0].length;
+        }
+        
+        // 残りのテキスト
+        if (lastIndex < text.length) {
+            parts.push({
+                type: 'text',
+                content: text.substring(lastIndex)
+            });
+        }
+        
+        return parts.length > 0 ? parts : [{ type: 'text', content: text }];
     }
 
     generateThreadTitle() {
@@ -95,7 +162,8 @@ class ThreadBattleAI {
     }
 
     createResponse(userPost, resident, style, index, total) {
-        const responses = [];
+        const userPostLower = userPost.toLowerCase();
+        const userPostLength = userPost.length;
         
         // 煽りパターン
         const aggressivePatterns = [
@@ -108,7 +176,11 @@ class ThreadBattleAI {
             `それってお前の主観じゃん`,
             `ソースは？`,
             `それってつまり何？`,
-            `お前の頭大丈夫？ｗ`
+            `お前の頭大丈夫？ｗ`,
+            `それって根拠あるの？`,
+            `お前の論理、めちゃくちゃじゃね？`,
+            `それって思い込みじゃね？`,
+            `お前の主張、支離滅裂すぎて草`
         ];
         
         // 論破パターン
@@ -120,7 +192,11 @@ class ThreadBattleAI {
             `それって一般化しすぎじゃね？`,
             `例外は考えないの？`,
             `前提が間違ってる気がする`,
-            `それって相関と因果の混同じゃね？`
+            `それって相関と因果の混同じゃね？`,
+            `それって論理の飛躍じゃね？`,
+            `反証可能性は？`,
+            `それって帰納法の誤用じゃね？`,
+            `お前の定義、曖昧すぎる`
         ];
         
         // 皮肉パターン
@@ -130,22 +206,52 @@ class ThreadBattleAI {
             `お前の世界では正しいのかもしれん`,
             `それはそれで面白い意見だなｗ`,
             `なるほど、お前はそう思うのか（察し）`,
-            `お前の尺度で測ってるだけじゃね？`
+            `お前の尺度で測ってるだけじゃね？`,
+            `お前の価値観、面白いなｗ`,
+            `それはそれで一理ある...わけないだろｗ`
         ];
         
+        // ユーザーの投稿内容に応じたレス
+        let contextAwarePatterns = [];
+        if (userPostLength < 10) {
+            contextAwarePatterns.push(`短すぎて何言ってるか分からんｗ`);
+            contextAwarePatterns.push(`もっと詳しく説明してよ`);
+        } else if (userPostLength > 200) {
+            contextAwarePatterns.push(`長文すぎて読む気失せるｗ`);
+            contextAwarePatterns.push(`要約してよ`);
+        }
+        
+        if (userPostLower.includes('テレワーク') || userPostLower.includes('リモート')) {
+            contextAwarePatterns.push(`テレワークって結局どうなんだよ`);
+            contextAwarePatterns.push(`テレワークのメリット・デメリット考えたことある？`);
+        }
+        if (userPostLower.includes('ai') || userPostLower.includes('人工知能')) {
+            contextAwarePatterns.push(`AIって結局人間の方が上だろ`);
+            contextAwarePatterns.push(`AIに仕事奪われるとか言ってる時点でお前の価値が分かるｗ`);
+        }
+        if (userPostLower.includes('終わり') || userPostLower.includes('終了')) {
+            contextAwarePatterns.push(`終わりって何が終わりなんだよ`);
+            contextAwarePatterns.push(`お前の頭が終わってるだけじゃね？`);
+        }
+        
         // 住民同士の揉め演出
-        const conflictPatterns = [
-            `>>${this.postNumber + index} お前も大概だろｗ`,
-            `>>${this.postNumber + index} それ言える立場？`,
-            `>>${this.postNumber + index} お前の方が論点ずらしてるじゃん`,
-            `>>${this.postNumber + index} お前も一緒に論破されろよｗ`
-        ];
+        const conflictPatterns = [];
+        if (this.postNumber > 0) {
+            const targetPost = this.postNumber + index;
+            conflictPatterns.push(`>>${targetPost} お前も大概だろｗ`);
+            conflictPatterns.push(`>>${targetPost} それ言える立場？`);
+            conflictPatterns.push(`>>${targetPost} お前の方が論点ずらしてるじゃん`);
+            conflictPatterns.push(`>>${targetPost} お前も一緒に論破されろよｗ`);
+        }
         
         let responseText = '';
         
         // 最初のレスは直接ユーザーへのツッコミ
         if (index === 0) {
-            if (style.aggressive > 0.7) {
+            // コンテキストに応じたレスがあれば優先
+            if (contextAwarePatterns.length > 0 && Math.random() > 0.3) {
+                responseText = contextAwarePatterns[Math.floor(Math.random() * contextAwarePatterns.length)];
+            } else if (style.aggressive > 0.7) {
                 responseText = aggressivePatterns[Math.floor(Math.random() * aggressivePatterns.length)];
             } else if (style.logical > 0.7) {
                 responseText = logicalPatterns[Math.floor(Math.random() * logicalPatterns.length)];
@@ -156,7 +262,7 @@ class ThreadBattleAI {
         // 中間のレスは住民同士の揉めや別視点
         else if (index < total - 1) {
             const rand = Math.random();
-            if (rand < 0.3) {
+            if (rand < 0.3 && conflictPatterns.length > 0) {
                 // 住民同士の揉め
                 responseText = conflictPatterns[Math.floor(Math.random() * conflictPatterns.length)];
             } else if (rand < 0.6) {
@@ -174,7 +280,8 @@ class ThreadBattleAI {
                 `>>${this.postNumber} お前負けだよｗ`,
                 `>>${this.postNumber} の主張、完全に論破されたな`,
                 `>>${this.postNumber} もう諦めろｗ`,
-                `>>${this.postNumber} の理論、破綻しすぎて草`
+                `>>${this.postNumber} の理論、破綻しすぎて草`,
+                `>>${this.postNumber} の論理、完全に破綻してる（確信）`
             ];
             responseText = summaryPatterns[Math.floor(Math.random() * summaryPatterns.length)];
         }
@@ -196,8 +303,16 @@ class ThreadBattleAI {
 
     addPost(resident, content, isUser = false) {
         this.postNumber++;
+        
+        // 空のスレッドメッセージを削除
+        const emptyThread = document.getElementById('emptyThread');
+        if (emptyThread) {
+            emptyThread.remove();
+        }
+        
         const postDiv = document.createElement('div');
         postDiv.className = `post ${isUser ? 'user-post' : 'ai-post'}`;
+        postDiv.setAttribute('data-post-number', this.postNumber);
         
         const headerDiv = document.createElement('div');
         headerDiv.className = 'post-header';
@@ -205,6 +320,15 @@ class ThreadBattleAI {
         const numberSpan = document.createElement('span');
         numberSpan.className = 'post-number';
         numberSpan.textContent = `${this.postNumber} ：`;
+        numberSpan.addEventListener('click', () => {
+            // レス番号クリックで引用を入力欄に追加
+            const userInput = document.getElementById('userInput');
+            const currentValue = userInput.value.trim();
+            const quote = `>>${this.postNumber} `;
+            userInput.value = currentValue ? `${currentValue}\n${quote}` : quote;
+            userInput.focus();
+            userInput.setSelectionRange(userInput.value.length, userInput.value.length);
+        });
         
         const nameSpan = document.createElement('span');
         nameSpan.className = 'post-name';
@@ -225,16 +349,46 @@ class ThreadBattleAI {
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'post-content';
-        contentDiv.textContent = content;
+        
+        // 引用リンクを処理
+        const parts = this.parseQuotes(content);
+        parts.forEach(part => {
+            if (part.type === 'quote') {
+                const quoteLink = document.createElement('span');
+                quoteLink.className = 'quote-link';
+                quoteLink.textContent = part.content;
+                quoteLink.addEventListener('click', () => {
+                    this.scrollToPost(part.postNumber);
+                });
+                contentDiv.appendChild(quoteLink);
+            } else {
+                const textNode = document.createTextNode(part.content);
+                contentDiv.appendChild(textNode);
+            }
+        });
         
         postDiv.appendChild(headerDiv);
         postDiv.appendChild(contentDiv);
         
+        // 投稿を保存
+        this.posts.push({
+            number: this.postNumber,
+            resident: resident,
+            content: content,
+            isUser: isUser,
+            element: postDiv
+        });
+        
         const threadContent = document.getElementById('threadContent');
         threadContent.appendChild(postDiv);
         
+        // レスカウント更新
+        this.updatePostCount();
+        
         // スクロールを最下部に
-        postDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        setTimeout(() => {
+            postDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
     }
 
     async handleSubmit() {
